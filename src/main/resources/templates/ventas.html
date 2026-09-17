@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Módulo de Ventas — Farmacia Salud</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        /* Estilos de carrito de compras */
+        #tbodyCarrito tr td { vertical-align: middle; }
+        .qty-ctrl { width: 65px; text-align: center; }
+        .tag-ok  { color: #198754; font-weight: 600; }
+        .tag-low { color: #fd7e14; font-weight: 600; }
+        .tag-no  { color: #dc3545; font-weight: 600; }
+        .fila-vencido { background-color: #fff3cd !important; }
+        /* Resaltar fila al pasar mouse en tabla productos */
+        #tablaProductos tbody tr:hover { cursor: pointer; background: #f0f4ff; }
+    </style>
+</head>
+<body class="bg-light">
+
+<!-- NAVBAR igual al resto del sistema -->
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+        <span class="navbar-brand">🏥 Farmacia Salud — Módulo de Ventas</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-white small">
+                <span th:text="${session.usuario}"></span>
+                (<span th:text="${session.rol}"></span>)
+            </span>
+            <a href="/gestionboletas" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-archive me-1"></i>Historial Boletas/Facturas
+            </a>
+            <a href="/menu" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-house me-1"></i>Menú
+            </a>
+        </div>
+    </div>
+</nav>
+
+<main class="container mt-2">
+
+    <!-- ALERTA DE ERROR -->
+    <div th:if="${error}" class="alert alert-danger text-center" th:text="${error}"></div>
+
+    <form id="formVenta" method="post" th:action="@{/ventas/registrar}">
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 1 — DATOS DEL COMPROBANTE
+    ═══════════════════════════════════════════════════════ -->
+    <div class="border p-4 rounded mb-4 bg-white shadow-sm">
+        <h5 class="mb-3"><i class="bi bi-receipt me-2 text-primary"></i>Datos del Comprobante</h5>
+        <div class="row g-3 align-items-end">
+
+            <!-- Tipo: Boleta o Factura -->
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Tipo de Comprobante</label>
+                <select name="tipo" id="selectTipo" class="form-select" onchange="actualizarCodigo()">
+                    <option value="BOLETA">BOLETA</option>
+                    <option value="FACTURA">FACTURA</option>
+                </select>
+            </div>
+
+            <!-- Código auto-generado (solo lectura) -->
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Número</label>
+                <input type="text" id="campoCodigo" class="form-control bg-light fw-bold text-primary"
+                       readonly th:value="${sigBoleta}">
+            </div>
+
+            <!-- Tipo de Pago -->
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Tipo de Pago</label>
+                <select name="tipoPago" class="form-select">
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Tarjeta">Tarjeta</option>
+                    <option value="Yape">Yape</option>
+                    <option value="Transferencia">Transferencia</option>
+                </select>
+            </div>
+
+            <!-- Moneda -->
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Moneda</label>
+                <select name="moneda" class="form-select">
+                    <option value="PEN">PEN – Soles</option>
+                    <option value="USD">USD – Dólares</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 2 — CLIENTE
+    ═══════════════════════════════════════════════════════ -->
+    <div class="border p-4 rounded mb-4 bg-white shadow-sm">
+        <h5 class="mb-3"><i class="bi bi-person-badge me-2 text-success"></i>Cliente</h5>
+
+        <div class="row g-3 align-items-start">
+            <!-- Buscar cliente existente -->
+            <div class="col-md-7">
+                <label class="form-label fw-bold">Buscar cliente (nombre o DNI)</label>
+                <input type="text" id="buscarCliente" class="form-control"
+                       placeholder="Escriba nombre o número de documento...">
+                <!-- Dropdown resultados -->
+                <div id="listaClientes" class="border rounded mt-1 bg-white shadow-sm"
+                     style="max-height:200px; overflow-y:auto; display:none; position:relative; z-index:100;">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-secondary">
+                            <tr><th>ID</th><th>Documento</th><th>Nombre</th></tr>
+                        </thead>
+                        <tbody id="tbodyBuscarCliente"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ID seleccionado -->
+            <div class="col-md-3">
+                <label class="form-label fw-bold">ID Cliente seleccionado</label>
+                <input type="number" name="idCliente" id="idClienteHidden"
+                       class="form-control bg-light text-success fw-bold"
+                       readonly placeholder="—">
+            </div>
+
+            <!-- Botón nuevo cliente -->
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-success w-100"
+                        data-bs-toggle="collapse" data-bs-target="#formNuevoCliente">
+                    <i class="bi bi-person-plus me-1"></i>Nuevo
+                </button>
+            </div>
+        </div>
+
+        <!-- Cliente seleccionado: badge informativo -->
+        <div id="clienteSeleccionadoInfo" class="mt-2 alert alert-success py-2 mb-0" style="display:none;">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong id="clienteNombreInfo">—</strong>
+            <span class="ms-3 text-muted" id="clienteDNIInfo"></span>
+        </div>
+
+        <!-- ─── Formulario rápido: Nuevo Cliente (colapsable) ─── -->
+        <div class="collapse mt-3" id="formNuevoCliente">
+            <div class="border rounded p-3 bg-light">
+                <h6 class="mb-3 text-success"><i class="bi bi-person-plus me-2"></i>Registrar Nuevo Cliente</h6>
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label small">Tipo Documento</label>
+                        <select id="ncTipo" class="form-select form-select-sm">
+                            <option value="DNI">DNI</option>
+                            <option value="RUC">RUC</option>
+                            <option value="CE">Carnet Extranjería</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Nro. Documento</label>
+                        <input type="text" id="ncDoc" class="form-control form-control-sm"
+                               placeholder="Ej: 45896321">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Nombre Completo</label>
+                        <input type="text" id="ncNombre" class="form-control form-control-sm"
+                               placeholder="Apellido y Nombre">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-success btn-sm w-100"
+                                onclick="registrarNuevoCliente()">
+                            <i class="bi bi-save me-1"></i>Guardar
+                        </button>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">Dirección (opcional)</label>
+                        <input type="text" id="ncDir" class="form-control form-control-sm"
+                               placeholder="Av. / Jr. / Calle...">
+                    </div>
+                </div>
+                <div id="ncMensaje" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 3 — BUSCADOR DE MEDICAMENTOS
+    ═══════════════════════════════════════════════════════ -->
+    <div class="border p-4 rounded mb-4 bg-white shadow-sm">
+        <h5 class="mb-3"><i class="bi bi-capsule me-2 text-warning"></i>Buscar Medicamentos</h5>
+        <div class="mb-3">
+            <input type="text" id="buscadorProducto" class="form-control"
+                   placeholder="Escriba código o nombre del medicamento para filtrar...">
+        </div>
+        <div class="table-responsive" style="max-height:320px; overflow-y:auto;">
+            <table class="table table-bordered table-hover text-center align-middle" id="tablaProductos">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th>Precio Unit.</th>
+                        <th>Stock</th>
+                        <th>Agregar</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyProductos">
+                    <tr th:each="p : ${productos}"
+                        th:classappend="${p.fechaVencimiento != null and p.fechaVencimiento.before(#dates.createNow())} ? 'fila-vencido' : ''"
+                        th:data-codigo="${p.codigoProductos}"
+                        th:data-desc="${p.descripcionProductos}"
+                        th:data-precio="${p.preciounitaria}"
+                        th:data-stock="${p.stock}">
+                        <td th:text="${p.codigoProductos}"></td>
+                        <td class="text-start" th:text="${p.descripcionProductos}"></td>
+                        <td th:text="'S/. ' + ${#numbers.formatDecimal(p.preciounitaria,1,2)}"></td>
+                        <td>
+                            <span th:if="${p.stock > 10}"  class="tag-ok"  th:text="${p.stock}"></span>
+                            <span th:if="${p.stock > 0 and p.stock <= 10}" class="tag-low" th:text="${p.stock}"></span>
+                            <span th:if="${p.stock == 0}"  class="tag-no">Sin stock</span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary"
+                                    th:disabled="${p.stock == 0}"
+                                    th:data-codigo="${p.codigoProductos}"
+                                    th:data-desc="${p.descripcionProductos}"
+                                    th:data-precio="${p.preciounitaria}"
+                                    th:data-stock="${p.stock}"
+                                    onclick="agregarAlCarrito(this)">
+                                <i class="bi bi-plus-lg"></i> Agregar
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 4 — CARRITO DE VENTA (parte final)
+    ═══════════════════════════════════════════════════════ -->
+    <div class="border p-4 rounded mb-4 bg-white shadow-sm">
+        <h5 class="mb-3"><i class="bi bi-cart-check me-2 text-danger"></i>Carrito de Venta</h5>
+
+        <div class="table-responsive">
+            <table class="table table-bordered text-center align-middle" id="tablaCarrito">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Código</th>
+                        <th class="text-start">Descripción</th>
+                        <th>Precio Unit.</th>
+                        <th>Cantidad</th>
+                        <th>Subtotal</th>
+                        <th>Quitar</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyCarrito">
+                    <tr id="filaCarritoVacio">
+                        <td colspan="6" class="text-muted py-3">
+                            <i class="bi bi-cart-x me-2"></i>Ningún producto agregado aún.
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="table-secondary fw-bold">
+                        <td colspan="4" class="text-end">TOTAL:</td>
+                        <td id="totalCarrito" colspan="2">S/. 0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Inputs ocultos para enviar al servidor -->
+        <div id="inputsCarrito"></div>
+
+        <!-- Botones de acción -->
+        <div class="text-center mt-3 d-flex justify-content-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-secondary" onclick="limpiarCarrito()">
+                <i class="bi bi-trash me-1"></i>Limpiar Carrito
+            </button>
+            <button type="submit" class="btn btn-success px-5" id="btnRegistrar" disabled>
+                <i class="bi bi-check2-circle me-1"></i>Registrar Venta
+            </button>
+            <a href="/gestionboletas" class="btn btn-outline-dark">
+                <i class="bi bi-archive me-1"></i>Ver Historial
+            </a>
+            <a href="/menu" class="btn btn-outline-secondary">
+                <i class="bi bi-house me-1"></i>Volver al Menú
+            </a>
+        </div>
+    </div>
+
+    </form><!-- fin formVenta -->
+</main>
+
+<!-- ─── Variables Thymeleaf → JavaScript ─── -->
+<script th:inline="javascript">
+    const SIG_BOLETA  = /*[[${sigBoleta}]]*/  'B2026001';
+    const SIG_FACTURA = /*[[${sigFactura}]]*/ 'F2026001';
+    const CLIENTES_DATA = /*[[${clientes}]]*/ [];
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ──────────────────────────────────────────────
+//  SELECTOR TIPO COMPROBANTE
+// ──────────────────────────────────────────────
+function actualizarCodigo() {
+    const tipo = document.getElementById('selectTipo').value;
+    document.getElementById('campoCodigo').value =
+        tipo === 'FACTURA' ? SIG_FACTURA : SIG_BOLETA;
+}
+
+// ──────────────────────────────────────────────
+//  BUSCADOR DE CLIENTES (filtro local)
+// ──────────────────────────────────────────────
+document.getElementById('buscarCliente').addEventListener('input', function () {
+    const q = this.value.trim().toLowerCase();
+    const lista = document.getElementById('listaClientes');
+    const tbody = document.getElementById('tbodyBuscarCliente');
+    tbody.innerHTML = '';
+
+    if (q.length < 1) { lista.style.display = 'none'; return; }
+
+    const filtro = CLIENTES_DATA.filter(c =>
+        String(c.numeroDoc).includes(q) ||
+        (c.nombreClientes || '').toLowerCase().includes(q)
+    ).slice(0, 10);
+
+    if (filtro.length === 0) { lista.style.display = 'none'; return; }
+
+    filtro.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.innerHTML = `<td>${c.clientesID}</td><td>${c.numeroDoc}</td><td>${c.nombreClientes}</td>`;
+        tr.onclick = () => seleccionarCliente(c.clientesID, c.nombreClientes, c.numeroDoc);
+        tbody.appendChild(tr);
+    });
+    lista.style.display = 'block';
+});
+
+function seleccionarCliente(id, nombre, doc) {
+    document.getElementById('idClienteHidden').value = id;
+    document.getElementById('clienteNombreInfo').textContent = nombre;
+    document.getElementById('clienteDNIInfo').textContent = 'Documento: ' + doc;
+    document.getElementById('clienteSeleccionadoInfo').style.display = 'block';
+    document.getElementById('listaClientes').style.display = 'none';
+    document.getElementById('buscarCliente').value = nombre;
+    // Agregar cliente al array local si no existe (para casos de registro nuevo)
+    if (!CLIENTES_DATA.find(c => c.clientesID === id)) {
+        CLIENTES_DATA.push({ clientesID: id, nombreClientes: nombre, numeroDoc: doc });
+    }
+    actualizarBotonRegistrar();
+}
+
+// Cierra el dropdown al hacer clic fuera
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('#buscarCliente') && !e.target.closest('#listaClientes')) {
+        document.getElementById('listaClientes').style.display = 'none';
+    }
+});
+
+// ──────────────────────────────────────────────
+//  NUEVO CLIENTE (AJAX)
+// ──────────────────────────────────────────────
+function registrarNuevoCliente() {
+    const tipo   = document.getElementById('ncTipo').value;
+    const doc    = document.getElementById('ncDoc').value.trim();
+    const nombre = document.getElementById('ncNombre').value.trim();
+    const dir    = document.getElementById('ncDir').value.trim();
+    const msg    = document.getElementById('ncMensaje');
+
+    if (!doc || !nombre) {
+        msg.innerHTML = '<div class="alert alert-warning py-1">Complete Documento y Nombre.</div>';
+        return;
+    }
+
+    fetch('/ventas/cliente/nuevo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `tipoDoc=${encodeURIComponent(tipo)}&nroDoc=${encodeURIComponent(doc)}&nombre=${encodeURIComponent(nombre)}&direccion=${encodeURIComponent(dir)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            msg.innerHTML = `<div class="alert alert-danger py-1">${data.error}</div>`;
+        } else {
+            msg.innerHTML = `<div class="alert alert-success py-1">✅ Cliente registrado correctamente.</div>`;
+            // Seleccionar automáticamente el nuevo cliente
+            seleccionarCliente(data.id, data.nombre, data.nroDoc);
+            // Limpiar campos
+            document.getElementById('ncDoc').value    = '';
+            document.getElementById('ncNombre').value = '';
+            document.getElementById('ncDir').value    = '';
+            // Cerrar el formulario colapsable
+            bootstrap.Collapse.getInstance(document.getElementById('formNuevoCliente'))?.hide();
+        }
+    })
+    .catch(() => {
+        msg.innerHTML = '<div class="alert alert-danger py-1">Error de conexión con el servidor.</div>';
+    });
+}
+
+// ──────────────────────────────────────────────
+//  BUSCADOR DE MEDICAMENTOS (AJAX + filtro local)
+// ──────────────────────────────────────────────
+let timerBusqueda = null;
+document.getElementById('buscadorProducto').addEventListener('input', function () {
+    clearTimeout(timerBusqueda);
+    const q = this.value.trim();
+    timerBusqueda = setTimeout(() => {
+        const filas = document.querySelectorAll('#tbodyProductos tr');
+        if (q.length === 0) {
+            filas.forEach(f => f.style.display = '');
+            return;
+        }
+        const ql = q.toLowerCase();
+        filas.forEach(f => {
+            const codigo = (f.dataset.codigo || '').toLowerCase();
+            const desc   = (f.dataset.desc   || '').toLowerCase();
+            f.style.display = (codigo.includes(ql) || desc.includes(ql)) ? '' : 'none';
+        });
+    }, 200);
+});
+
+// ──────────────────────────────────────────────
+//  CARRITO DE VENTAS
+// ──────────────────────────────────────────────
+const carrito = {}; // { codigo: { desc, precio, cantidad, stock } }
+
+function agregarAlCarrito(btn) {
+    const codigo = btn.dataset.codigo;
+    const desc   = btn.dataset.desc;
+    const precio = parseFloat(btn.dataset.precio);
+    const stock  = parseInt(btn.dataset.stock);
+
+    if (carrito[codigo]) {
+        if (carrito[codigo].cantidad >= carrito[codigo].stock) {
+            alert('⚠ No hay más stock disponible para: ' + desc);
+            return;
+        }
+        carrito[codigo].cantidad++;
+    } else {
+        carrito[codigo] = { desc, precio, cantidad: 1, stock };
+    }
+    renderCarrito();
+    actualizarBotonRegistrar();
+}
+
+function cambiarCantidad(codigo, valor) {
+    const c  = carrito[codigo];
+    const nv = parseInt(valor);
+    if (isNaN(nv) || nv < 1) { eliminarDelCarrito(codigo); return; }
+    c.cantidad = Math.min(nv, c.stock);
+    renderCarrito();
+}
+
+function eliminarDelCarrito(codigo) {
+    delete carrito[codigo];
+    renderCarrito();
+    actualizarBotonRegistrar();
+}
+
+function limpiarCarrito() {
+    Object.keys(carrito).forEach(k => delete carrito[k]);
+    renderCarrito();
+    actualizarBotonRegistrar();
+}
+
+function renderCarrito() {
+    const tbody   = document.getElementById('tbodyCarrito');
+    const filaV   = document.getElementById('filaCarritoVacio');
+    const inputsC = document.getElementById('inputsCarrito');
+    inputsC.innerHTML = '';
+
+    // Eliminar filas previas del carrito
+    tbody.querySelectorAll('.fila-carrito').forEach(r => r.remove());
+
+    const keys = Object.keys(carrito);
+    let total = 0;
+
+    if (keys.length === 0) {
+        filaV.style.display = '';
+        document.getElementById('totalCarrito').textContent = 'S/. 0.00';
+        return;
+    }
+    filaV.style.display = 'none';
+
+    keys.forEach(codigo => {
+        const item = carrito[codigo];
+        const sub  = item.precio * item.cantidad;
+        total += sub;
+
+        const tr = document.createElement('tr');
+        tr.className = 'fila-carrito';
+        tr.innerHTML = `
+            <td class="small">${codigo}</td>
+            <td class="text-start small">${item.desc}</td>
+            <td class="small">S/. ${item.precio.toFixed(2)}</td>
+            <td>
+                <input type="number" class="form-control form-control-sm qty-ctrl d-inline-block"
+                       value="${item.cantidad}" min="1" max="${item.stock}"
+                       onchange="cambiarCantidad('${codigo}', this.value)">
+            </td>
+            <td class="fw-bold small">S/. ${sub.toFixed(2)}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        onclick="eliminarDelCarrito('${codigo}')">
+                    <i class="bi bi-trash3"></i>
+                </button>
+            </td>`;
+        tbody.insertBefore(tr, document.getElementById('filaCarritoVacio'));
+
+        // Inputs ocultos para el formulario POST
+        inputsC.innerHTML += `<input type="hidden" name="codigos"    value="${codigo}">`;
+        inputsC.innerHTML += `<input type="hidden" name="cantidades" value="${item.cantidad}">`;
+    });
+
+    document.getElementById('totalCarrito').textContent = 'S/. ' + total.toFixed(2);
+}
+
+function actualizarBotonRegistrar() {
+    const tieneItems   = Object.keys(carrito).length > 0;
+    const tieneCliente = document.getElementById('idClienteHidden').value !== '';
+    document.getElementById('btnRegistrar').disabled = !(tieneItems && tieneCliente);
+}
+</script>
+</body>
+</html>

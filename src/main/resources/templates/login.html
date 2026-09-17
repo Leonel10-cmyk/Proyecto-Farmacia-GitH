@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | Farmacia Salud</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light d-flex align-items-center" style="height: 100vh;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-4 card p-4 shadow">
+                <h3 class="text-center">Ingreso como <span th:text="${session.rol}"></span></h3>
+                <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+                <form th:action="@{/login}" method="post">
+                    <div class="mb-3">
+                        <label>Usuario</label>
+                        <input type="text" name="usuario" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Contraseña</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">INGRESAR</button>
+                    <a href="/" class="btn btn-link w-100 mt-2">Volver</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

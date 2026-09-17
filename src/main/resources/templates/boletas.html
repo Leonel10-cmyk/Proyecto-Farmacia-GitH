@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Historial de Boletas y Facturas</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+        <span class="navbar-brand">🏥 Farmacia Salud — Historial Boletas / Facturas</span>
+        <div class="d-flex gap-2">
+            <a href="/ventas"        class="btn btn-outline-light btn-sm"><i class="bi bi-cart-plus me-1"></i>Nueva Venta</a>
+            <a href="/gestionclientes" class="btn btn-outline-light btn-sm"><i class="bi bi-people me-1"></i>Clientes</a>
+            <a href="/gestionproductos" class="btn btn-outline-light btn-sm"><i class="bi bi-capsule me-1"></i>Productos</a>
+            <a href="/menu"          class="btn btn-outline-light btn-sm"><i class="bi bi-house me-1"></i>Menú</a>
+        </div>
+    </div>
+</nav>
+
+<main class="container mt-2">
+    <h3 class="text-center mb-4"><i class="bi bi-archive me-2"></i>Historial de Boletas / Facturas</h3>
+
+    <div th:if="${mensajes != null}" class="alert alert-info text-center" th:text="${mensajes}"></div>
+
+    <form th:action="@{/gestionboletas}" method="get" class="border p-4 rounded mb-4 bg-white shadow-sm">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label>Nro Boleta</label>
+                <input type="text" name="Codigo" class="form-control"
+                       th:value="${busquedaBoletas != null ? busquedaBoletas.nroboletas : ''}">
+            </div>
+            <div class="col-md-4">
+                <label>Moneda</label>
+                <select name="Moneda" class="form-control">
+                    <option value="PEN" th:selected="${busquedaBoletas == null || busquedaBoletas.moneda == 'PEN'}">Soles</option>
+                    <option value="USD" th:selected="${busquedaBoletas != null && busquedaBoletas.moneda == 'USD'}">Dólares</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label>Fecha Emisión</label>
+                <input type="date" name="FechaEmision" class="form-control"
+                       th:value="${busquedaBoletas != null ? busquedaBoletas.fechaemision : ''}">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label>Tipo de Pago</label>
+                <select name="tipopagos" class="form-control">
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TARJETA">Tarjeta</option>
+                    <option value="YAPE">Yape</option>
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label>ID Cliente</label>
+                <input type="number" name="idClientes" class="form-control"
+                       th:value="${busquedaBoletas != null ? busquedaBoletas.idClientes : ''}">
+            </div>
+            <div class="col-md-4">
+                <label>ID Vendedor</label>
+                <input type="number" name="idvendedor" class="form-control"
+                       th:value="${busquedaBoletas != null ? busquedaBoletas.idVendedor : ''}">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label>Total</label>
+                <input type="number" step="0.01" name="Total" class="form-control"
+                       th:value="${busquedaBoletas != null ? busquedaBoletas.total : ''}">
+            </div>
+        </div>
+        <div class="text-center">
+            <button type="submit" name="accion" value="registrar" class="btn btn-success">Registrar</button>
+            <button type="submit" name="accion" value="actualizar" class="btn btn-warning">Actualizar</button>
+            <button type="submit" name="accion" value="Buscar"    class="btn btn-info">Buscar</button>
+            <a th:href="@{/gestionboletas(accion='listar')}" class="btn btn-secondary">Nuevo</a>
+        </div>
+    </form>
+
+    <ul class="nav nav-tabs mb-3" id="documentTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="boletas-tab" data-bs-toggle="tab" data-bs-target="#boletas-panel"
+                    type="button" role="tab"><i class="bi bi-file-earmark-text me-1"></i>Boletas</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="facturas-tab" data-bs-toggle="tab" data-bs-target="#facturas-panel"
+                    type="button" role="tab"><i class="bi bi-file-earmark-richtext me-1"></i>Facturas</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- TAB BOLETAS -->
+        <section class="tab-pane fade show active" id="boletas-panel" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover text-center align-middle bg-white shadow-sm">
+                    <thead class="table-dark">
+                    <tr>
+                        <th>Nro Boleta</th>
+                        <th>Moneda</th>
+                        <th>Fecha</th>
+                        <th>Pago</th>
+                        <th>Cliente</th>
+                        <th>DNI/Doc</th>
+                        <th>Vendedor</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="b : ${listarBoletas}">
+                        <td th:text="${b.nroBoleta}"></td>
+                        <td th:text="${b.moneda}"></td>
+                        <td th:text="${b.fechaEmision}"></td>
+                        <td th:text="${b.tipoPago}"></td>
+                        <td th:text="${b.nombreCliente}"></td>
+                        <td th:text="${b.nroDocCliente}"></td>
+                        <td th:text="${b.nombreVendedor}"></td>
+                        <td th:text="'S/. ' + ${#numbers.formatDecimal(b.total,1,2)}"></td>
+                        <td>
+                            <a th:href="@{/gestionboletas(accion='Buscar', Codigo=${b.nroBoleta})}"
+                               class="btn btn-sm btn-primary">Editar</a>
+                            <a th:href="@{/ventas/ticket(tipo='B', codigo=${b.nroBoleta})}"
+                               class="btn btn-sm btn-success" target="_blank">
+                                <i class="bi bi-receipt me-1"></i>Ticket</a>
+                            <a th:href="@{/gestionboletas(accion='eliminar', Codigo=${b.nroBoleta})}"
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('¿Eliminar esta boleta?')">Eliminar</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB FACTURAS -->
+        <section class="tab-pane fade" id="facturas-panel" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover text-center align-middle bg-white shadow-sm">
+                    <thead class="table-dark">
+                    <tr>
+                        <th>Nro Factura</th>
+                        <th>Moneda</th>
+                        <th>Fecha</th>
+                        <th>Pago</th>
+                        <th>Cliente</th>
+                        <th>DNI/Doc</th>
+                        <th>Vendedor</th>
+                        <th>Total</th>
+                        <th>Ticket</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="f : ${listarFacturas}">
+                        <td th:text="${f.nroFactura}"></td>
+                        <td th:text="${f.moneda}"></td>
+                        <td th:text="${f.fechaEmision}"></td>
+                        <td th:text="${f.tipoPago}"></td>
+                        <td th:text="${f.nombreCliente}"></td>
+                        <td th:text="${f.nroDocCliente}"></td>
+                        <td th:text="${f.nombreVendedor}"></td>
+                        <td th:text="'S/. ' + ${#numbers.formatDecimal(f.total,1,2)}"></td>
+                        <td>
+                            <a th:href="@{/ventas/ticket(tipo='F', codigo=${f.nroFactura})}"
+                               class="btn btn-sm btn-success" target="_blank">
+                                <i class="bi bi-receipt me-1"></i>Ticket</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div class="text-center mt-3">
+        <a href="/ventas" class="btn btn-primary me-2">
+            <i class="bi bi-cart-plus me-1"></i>Nueva Venta
+        </a>
+        <a href="/menu" class="btn btn-outline-dark">
+            <i class="bi bi-house me-1"></i>Volver al Menú
+        </a>
+    </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

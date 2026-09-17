@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Ticket — ' + ${tipoDoc} + ' ' + ${nroDoc}">Ticket de Venta</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        /* Solo el bloque del ticket tiene estilo de comprobante */
+        .ticket-wrapper {
+            max-width: 580px;
+            margin: 0 auto;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .ticket-header-band {
+            background: #212529;
+            color: #fff;
+            padding: 18px 24px;
+            text-align: center;
+        }
+        .ticket-header-band h5 { margin: 0; font-weight: 700; letter-spacing: .5px; }
+        .ticket-header-band p  { margin: 4px 0 0; font-size: .85rem; opacity: .8; }
+        .nro-badge {
+            display: inline-block;
+            margin-top: 10px;
+            background: rgba(255,255,255,.15);
+            border: 1px solid rgba(255,255,255,.4);
+            border-radius: 20px;
+            padding: 4px 18px;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .ticket-body { padding: 20px 24px; }
+        .divider-dash { border: none; border-top: 1.5px dashed #ced4da; margin: 14px 0; }
+        .items-table { font-size: .88rem; }
+        .items-table thead th { background: #343a40; color: #fff; text-align: center; }
+        .items-table td { vertical-align: middle; }
+        .ticket-footer {
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            text-align: center;
+            padding: 12px;
+            font-size: .8rem;
+            color: #6c757d;
+        }
+        /* Ocultar navbar al imprimir */
+        @media print {
+            nav, .btn-toolbar { display: none !important; }
+            body { background: #fff; }
+            .ticket-wrapper { border: none; box-shadow: none; max-width: 100%; border-radius: 0; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<!-- NAVBAR igual al resto del sistema -->
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+        <span class="navbar-brand">🏥 Farmacia Salud — Ticket de Venta</span>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-printer me-1"></i>Imprimir
+            </button>
+            <a href="/ventas" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-cart-plus me-1"></i>Nueva Venta
+            </a>
+            <a href="/gestionboletas" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-archive me-1"></i>Historial
+            </a>
+            <a href="/menu" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-house me-1"></i>Menú
+            </a>
+        </div>
+    </div>
+</nav>
+
+<main class="container mt-2">
+
+    <!-- Botones adicionales (pantalla) -->
+    <div class="btn-toolbar justify-content-center mb-3 gap-2">
+        <button onclick="window.print()" class="btn btn-dark">
+            <i class="bi bi-printer me-2"></i>Imprimir Ticket
+        </button>
+        <a href="/ventas" class="btn btn-success">
+            <i class="bi bi-cart-plus me-2"></i>Nueva Venta
+        </a>
+        <a href="/gestionboletas" class="btn btn-outline-secondary">
+            <i class="bi bi-archive me-2"></i>Ver Historial
+        </a>
+    </div>
+
+    <!-- ──── TICKET ──── -->
+    <div class="ticket-wrapper mb-4 shadow-sm">
+
+        <!-- Encabezado -->
+        <div class="ticket-header-band">
+            <h5>🏥 FARMACIA SALUD</h5>
+            <p>Jr. Salud 123 — Lima, Perú &nbsp;|&nbsp; RUC: 20123456789</p>
+            <div class="nro-badge">
+                <span th:text="${tipoDoc}">BOLETA</span> N°
+                <span th:text="${nroDoc}">B2026001</span>
+            </div>
+        </div>
+
+        <div class="ticket-body">
+
+            <!-- Info cliente / vendedor en grid Bootstrap -->
+            <div class="row g-0 mb-2 small">
+                <div class="col-6 border-end pe-3">
+                    <p class="mb-1 text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;">Cliente</p>
+                    <p class="mb-0 fw-bold" th:text="${documento.nombreCliente}">—</p>
+                    <p class="mb-0 text-muted" th:text="${documento.nroDocCliente}">—</p>
+                </div>
+                <div class="col-6 ps-3">
+                    <p class="mb-1 text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;">Vendedor</p>
+                    <p class="mb-0 fw-bold" th:text="${documento.nombreVendedor}">—</p>
+                </div>
+            </div>
+            <div class="row g-0 mb-0 small">
+                <div class="col-6 border-end pe-3">
+                    <p class="mb-1 text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;">Fecha</p>
+                    <p class="mb-0" th:text="${documento.fechaEmision}">—</p>
+                </div>
+                <div class="col-3 px-3">
+                    <p class="mb-1 text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;">Pago</p>
+                    <p class="mb-0" th:text="${documento.tipoPago}">—</p>
+                </div>
+                <div class="col-3 ps-3">
+                    <p class="mb-1 text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;">Moneda</p>
+                    <p class="mb-0" th:text="${documento.moneda}">PEN</p>
+                </div>
+            </div>
+
+            <hr class="divider-dash">
+
+            <!-- Tabla de productos -->
+            <table class="table table-sm items-table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Cód.</th>
+                        <th>Descripción</th>
+                        <th class="text-center">Cant.</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="item : ${items}">
+                        <td th:text="${item['codigo']}"></td>
+                        <td th:text="${item['descripcion']}"></td>
+                        <td class="text-center" th:text="${item['cantidad']}"></td>
+                        <td class="text-end" th:text="'S/. ' + ${#numbers.formatDecimal(item['precio'],1,2)}"></td>
+                        <td class="text-end fw-bold" th:text="'S/. ' + ${#numbers.formatDecimal(item['subtotal'],1,2)}"></td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="table-secondary">
+                        <td colspan="4" class="text-end fw-bold">TOTAL A PAGAR:</td>
+                        <td class="text-end fw-bold fs-5"
+                            th:text="'S/. ' + ${#numbers.formatDecimal(documento.total,1,2)}">
+                            S/. 0.00
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="ticket-footer">
+            <p class="mb-0">¡Gracias por su compra! Conserve este comprobante.</p>
+            <p class="mb-0">Sistema de Gestión — Farmacia Salud © 2026</p>
+        </div>
+    </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

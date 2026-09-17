@@ -1,0 +1,22 @@
+# ===== Maven =====
+target/
+
+# ===== Eclipse / STS =====
+# .metadata es el workspace interno de Eclipse en TU máquina: nunca se sube.
+.metadata/
+.settings/
+# .classpath y .project SÍ se mantienen (ver README: permiten importar
+# el proyecto directamente en Eclipse/STS con "Existing Projects into Workspace")
+
+# ===== Datos sensibles / locales =====
+application-local.properties
+*.env
+
+# ===== Archivos compilados sueltos =====
+*.zip
+*.jar
+!maven-wrapper.jar
+
+# ===== Sistema operativo =====
+.DS_Store
+Thumbs.db
