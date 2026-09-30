@@ -20,8 +20,8 @@ Sistema web académico para la gestión de una farmacia: clientes, productos, bo
 
 **1. Clona el repositorio**
 ```bash
-git clone https://github.com/tu-usuario/farmacia-spring-boot.git
-cd farmacia-spring-boot
+git clone https://github.com/Leonel10-cmyk/Proyecto-Farmacia-GitH.git
+cd Proyecto-Farmacia-GitH
 ```
 
 **2. Crea la base de datos**
@@ -68,7 +68,21 @@ gracias a los archivos `.project` y `.classpath` incluidos en el repositorio.
 
 ## 📸 Capturas de pantalla
 
-_Agrega aquí 2-3 capturas del proyecto funcionando (listado de productos, registro de boleta, etc.)._
+| Login Administrador | Módulo de Ventas |
+|----------------------|-------------------|
+| ![Login Admin](screenshots/Login-Admi.png) | ![Módulo de ventas](screenshots/Modulo-ventas.png) |
+
+| Boleta de Ventas / Facturas | Comprobante de Pago |
+|-------------------------------|------------------------|
+| ![Boleta y facturas](screenshots/Boleta-facturas.png) | ![Comprobante de pago](screenshots/Comprobante-Pago.png) |
+
+| Mantenimiento de Clientes | Mantenimiento de Productos |
+|-----------------------------|-------------------------------|
+| ![Mantenimiento clientes](screenshots/Mantenimiento-clientes.png) | ![Mantenimiento productos](screenshots/Mantenimiento-productos.png) |
+
+## 🎥 Demo en video
+
+[![Ver demo](https://img.youtube.com/vi/JabM_nkyndU/0.jpg)](https://youtu.be/JabM_nkyndU)
 
 ## 📄 Licencia
 
